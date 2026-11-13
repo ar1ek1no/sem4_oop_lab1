@@ -1,152 +1,177 @@
 # Управление финансовой системой
 
-Веб-приложение для частного клиента и сотрудников банка: счета и вклады в разных банках, переводы между ними, зарплатные проекты предприятий, подтверждение операций менеджером, журнал действий и их отмена администратором.
+Веб-приложение банка для трёх ролей — **клиент**, **менеджер**, **администратор**: счета и вклады
+в разных банках, переводы, зарплатные проекты предприятий, подтверждение операций менеджером,
+журнал действий и их отмена администратором.
 
-Учебный проект: одна кодовая база используется как база для пяти лабораторных по верификации ПО (требования → тесты → план и кейсы → UI/API → нагрузка).
+Проект учебный: одна кодовая база используется как объект для пяти лабораторных по верификации
+ПО — от требований и тестов до совместимости, безопасности и нагрузки.
 
-> **Изучаешь проект с нуля?** Начни с [`СДАЧА.md`](СДАЧА.md) — это оглавление.
-> Шесть гайдов лежат в [`readmes/`](readmes/): план на 2–3 часа и по одному файлу на каждую лабораторную.
-> Документы для сдачи — в [`docs/`](docs/README.md) по папкам `lab1`…`lab5`.
+---
 
-## 1. Назначение и целевые пользователи
+## Содержание
 
-**Проблема.** Клиенту, у которого счета в нескольких банках, неудобно переводить деньги между ними и получать зарплату: каждый банк — отдельное приложение. Банку нужен контроль: кто открыл счёт, какие операции прошли, что можно отменить.
+- [Что умеет](#что-умеет)
+- [Стек](#стек)
+- [Быстрый старт](#быстрый-старт)
+- [Демо-учётные записи](#демо-учётные-записи)
+- [Архитектура](#архитектура)
+- [Документация: что где лежит](#документация-что-где-лежит)
+- [Что проверено и с каким результатом](#что-проверено-и-с-каким-результатом)
+- [CI](#ci)
+- [Команды](#команды)
+- [Ограничения](#ограничения)
 
-**Цель.** Одна точка входа, где клиент сам открывает счёт или вклад, переводит средства, подаёт заявку на зарплатный проект и видит историю; менеджер подтверждает клиентов и заявки, блокирует счета; администратор видит весь журнал и отменяет ошибочные операции.
+---
 
-| Роль | Что делает |
+## Что умеет
+
+| Роль | Возможности |
 |---|---|
-| **Клиент** | Регистрируется (ждёт подтверждения), открывает счёт/вклад, переводит средства, копит проценты по вкладу, подаёт заявку на зарплатный проект и получает зарплату, смотрит историю |
-| **Менеджер** | Подтверждает или отклоняет регистрации и заявки, ведёт предприятия и штат, блокирует/разблокирует счета, смотрит историю клиента |
-| **Администратор** | Видит журнал всех действий, отменяет ошибочные операции |
+| **Клиент** | регистрация (ждёт подтверждения), открытие счёта и вклада, переводы между своими счетами, начисление 5 % на вклады, заявка на зарплатный проект, получение зарплаты, история операций |
+| **Менеджер** | подтверждение и отклонение регистраций и заявок, отзыв подтверждения, предприятия и штат, блокировка и разблокировка счетов, история клиента |
+| **Администратор** | журнал всех действий и отмена ошибочных операций (отмена тоже попадает в журнал) |
 
-## 2. Стек технологий
+Помимо страниц есть **JSON API** `/api/v1` с токеном — для Postman и нагрузочных прогонов.
+
+## Стек
 
 | Слой | Технология |
 |---|---|
 | Язык | Python 3.10+ |
-| Веб-фреймворк | Flask 3 (blueprints, app factory) |
-| Шаблоны | Jinja2 + HTML/CSS (без JS-фреймворков) |
-| Доступ к данным | SQLAlchemy 2 + Flask-SQLAlchemy (ORM, репозитории) |
-| СУБД | SQLite (файл `finance.db`) |
-| Тесты | pytest, pytest-cov; браузерные — Playwright (Page Object) |
+| Веб | Flask 3, Blueprints, Jinja2 |
+| Данные | SQLAlchemy 2 + Flask-SQLAlchemy, SQLite (`finance.db`) |
+| Тесты | pytest, pytest-cov, Playwright (Page Object) |
 | Нагрузка | Locust |
 | Линтер | ruff |
-| API-тесты | Postman (коллекция в `docs/lab4/postman/`) |
+| CI | GitHub Actions |
 
-## 3. Архитектура
-
-Четыре слоя, зависимости идут только вниз: представление → сервисы → репозитории → модели.
-
-```mermaid
-flowchart TD
-    B["Браузер / Postman / Playwright"] -->|HTTP| V["Веб-слой<br/>blueprints Flask + Jinja + JSON API"]
-    V --> S["Сервисы<br/>Auth, Bank, Manager, Admin"]
-    S --> CMD["Команды действий<br/>execute / undo"]
-    S --> R["Репозитории<br/>запросы к БД"]
-    R --> M["Модели SQLAlchemy"]
-    M --> DB[("SQLite<br/>finance.db")]
-    S --> LOG["Журнал<br/>transaction_logs + logs/app.log"]
-```
-
-Правила, которые держат слои раздельно:
-
-1. Обработчик маршрута не пишет SQL и не меняет модели — он вызывает сервис и рендерит шаблон.
-2. Сервис отвечает за бизнес-правило (достаточно ли средств, чей счёт, можно ли отменить), репозиторий — только за выборку и сохранение.
-3. Модель не знает ни про Flask, ни про HTTP.
-4. Каждая изменяющая операция пишет запись в журнал и, если её можно отменить, имеет команду с `undo`.
-
-## 4. Модули
-
-| Модуль | Ответственность |
-|---|---|
-| `app.py` | Фабрика приложения: конфигурация, регистрация blueprints, обработчики ошибок, запуск |
-| `config.py` | Настройки: строка подключения к БД, секретный ключ, режим отладки |
-| `extensions.py` | Объект `db` (Flask-SQLAlchemy), общий для приложения и тестов |
-| `models.py` | Сущности: `User`, `Bank`, `Enterprise`, `Employment`, `Account`, `TransactionLog`, `SalaryRequest`; статусы и типы |
-| `repositories/account_repository.py` | Выборка счетов пользователя, по id, изменение баланса, блокировка |
-| `repositories/user_repository.py` | Пользователи: создание, поиск по логину/id, ожидающие подтверждения |
-| `repositories/bank_repository.py`, `enterprise_repository.py` | Справочники банков и предприятий |
-| `services/auth_service.py` | Регистрация (только клиент), проверка пароля по хэшу, вход/выход |
-| `services/bank_service.py` | Открытие/закрытие счёта, перевод, вклад и начисление, заявка на зарплату, получение зарплаты, история |
-| `services/manager_service.py` | Подтверждение и отклонение регистраций и заявок, предприятия и штат, блокировка счетов |
-| `services/admin_service.py` | Журнал всех действий, отмена операции через команду |
-| `services/commands.py` | Классы действий с `execute()`/`undo()` — отмена без `if/elif` |
-| `web/auth.py` | Blueprint `/login`, `/register`, `/logout` |
-| `web/client.py` | Blueprint страниц клиента: счета, вклады, переводы, история, зарплата |
-| `web/manager.py` | Blueprint страниц менеджера |
-| `web/admin.py` | Blueprint страниц администратора |
-| `web/api.py` | JSON API `/api/v1/...` с токеном — для Postman и нагрузочных прогонов |
-| `templates/`, `static/` | Jinja-шаблоны (базовый + страницы по ролям) и CSS |
-| `tests/unit`, `tests/integration`, `tests/scenario`, `tests/ui` | Юнит с моками, интеграционные на БД, сценарные переходы состояний, браузерные тесты |
-| `load/locustfile.py` | Профиль нагрузки и сценарии Locust |
-| `docs/lab4/postman/` | Коллекция и окружение Postman на все эндпоинты API |
-| `tools/` | Скрипты отчётности: скриншоты, кроссбраузерность, безопасность, сборка коллекции |
-| `docs/` | Спецификация требований, диаграмма состояний, тест-план, отчёты |
-| `ui/` | Архивный слой на `customtkinter` — в веб-версии не используется, оставлен как история проекта |
-
-## 5. Точки интеграции
-
-| Точка | Что именно | Где настроено |
-|---|---|---|
-| **База данных** | SQLite-файл `finance.db`, 7 таблиц: `users`, `banks`, `enterprises`, `employment`, `accounts`, `salary_requests`, `transaction_logs` | `config.py` → `SQLALCHEMY_DATABASE_URI` |
-| **HTTP API** | `/api/v1/...` — вход по токену, счета, переводы, история; используется Postman и Locust | `web/api.py` |
-| **Файловая система** | `finance.db` (данные), `logs/app.log` (журнал приложения), `screenshots/` (скриншоты браузерных тестов) | `config.py`, `tests/ui/conftest.py` |
-| **Внешних сервисов нет** | Платежи, проценты и подтверждения моделируются внутри системы; сетевые вызовы только в тестовых инструментах | — |
-
-## 6. Сборка и запуск
+## Быстрый старт
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate          # Windows
-source .venv/bin/activate       # Linux / macOS
+.venv\Scripts\activate            # Windows
+source .venv/bin/activate         # Linux / macOS
 
 pip install -r requirements.txt
-python seed.py                  # демо-данные: банки, предприятия, три учётные записи
-flask --app app run --debug     # http://127.0.0.1:5000
+python seed.py                    # банки, предприятия, демо-учётки
+flask --app app run --debug       # http://127.0.0.1:5000
 ```
 
-Демо-учётные записи создаёт `seed.py`: `client1` / `client1`, `manager1` / `manager1`, `admin1` / `admin1`.
+## Демо-учётные записи
+
+| Логин | Пароль | Роль |
+|---|---|---|
+| `client1` | `client1` | клиент (3 счёта, подтверждённая заявка на EPAM) |
+| `client2` | `client2` | клиент (счёт в БНБ-Банке) |
+| `manager1` | `manager1` | менеджер |
+| `admin1` | `admin1` | администратор |
+
+Ещё есть неподтверждённые `client3`, `nadintest2`, `nadin5` — на них удобно смотреть отказ входа.
+
+## Архитектура
+
+Слои идут только вниз: каждый знает лишь про соседа.
+
+```text
+браузер / Postman / Locust
+            │ HTTP
+            ▼
+   web/ + templates/ + static/        представление: маршруты, HTML, CSS, JS
+            │
+            ▼
+   services/                          бизнес-логика: правила и проверки
+            │
+            ▼
+   repositories/                      доступ к данным: запросы
+            │
+            ▼
+   models.py + finance.db             модели и SQLite
+```
+
+| Модуль | Ответственность |
+|---|---|
+| `app.py` | фабрика приложения, регистрация маршрутов, обработка ошибок 400/403/404/500 |
+| `models.py` | 7 сущностей: пользователь, банк, предприятие, трудоустройство, счёт, журнал, заявка |
+| `services/` | вход и пароли, счета и переводы, зарплата, работа менеджера, отмена (Command) |
+| `repositories/` | выборки и сохранение, без бизнес-правил |
+| `web/` | страницы по ролям и JSON API |
+| `templates/`, `static/` | Jinja-шаблоны, CSS, JS |
+| `tests/` | модульные, интеграционные, сценарные и браузерные тесты |
+| `load/` | профиль нагрузки Locust |
+| `tools/` | скрипты отчётов: скриншоты, кроссбраузерность, безопасность, нагрузка |
+
+Подробнее — в [документации](docs/README.md).
+
+## Документация: что где лежит
+
+Папки названы по смыслу, а не по номерам лабораторных: ищешь ответ на вопрос — идёшь в папку,
+которая отвечает на этот вопрос.
+
+| Папка | На какой вопрос отвечает | Ключевые файлы |
+|---|---|---|
+| [`docs/requirements/`](docs/requirements/README.md) | **что система должна делать** | [SRS](docs/requirements/SRS_finance.md), [диаграммы состояний](docs/requirements/STATE_DIAGRAM.md), [реестр дефектов](docs/requirements/ISSUES.md) |
+| [`docs/test-design/`](docs/test-design/README.md) | **как мы это проверяем** | [план тестирования](docs/test-design/TEST_PLAN.md), [чек-лист](docs/test-design/CHECKLIST.md), [52 тест-кейса](docs/test-design/TEST_CASES.md) |
+| [`docs/test-results/`](docs/test-results/README.md) | **что получилось** | [результаты и метрики](docs/test-results/TEST_RESULTS.md), [отчёты о дефектах](docs/test-results/DEFECT_REPORTS.md), [покрытие](docs/test-results/COVERAGE.md), [скриншоты](docs/test-results/screenshots/) |
+| [`docs/api-security/`](docs/api-security/README.md) | **как проверен HTTP-слой и права** | [API и Postman](docs/api-security/API_TESTING.md), [безопасность](docs/api-security/SECURITY.md), [коллекция](docs/api-security/postman/) |
+| [`docs/ui-compatibility/`](docs/ui-compatibility/README.md) | **как выглядит и работает в браузерах** | [матрица «проверка × браузер»](docs/ui-compatibility/COMPATIBILITY.md) |
+| [`docs/performance/`](docs/performance/README.md) | **сколько выдерживает** | [план нагрузки](docs/performance/LOAD_PLAN.md), [результаты и график](docs/performance/LOAD_RESULTS.md) |
+| [`docs/engineering/`](docs/engineering/README.md) | **какое качество кода и связей** | [линтер](docs/engineering/LINTING.md), [матрица трассируемости](docs/engineering/TRACEABILITY.md) |
+| [`docs/learning/`](docs/learning/README.md) | **как это устроено и как объяснять** | 6 разборов: план и по одному на каждую лабораторную |
+| [`docs/internal/`](docs/internal/README.md) | служебное | журнал изменений, разведка, стартовый промпт |
+| [`docs/ВОПРОСЫ_И_ОТВЕТЫ.md`](docs/ВОПРОСЫ_И_ОТВЕТЫ.md) | теория к защите | все вопросы списка + дополнительные, с ответами |
+
+## Что проверено и с каким результатом
+
+| Проверка | Результат | Где смотреть |
+|---|---|---|
+| Требования | 4 бизнес-требования, 5 сценариев, 16 FR, 6 NFR, у каждого способ проверки | [SRS](docs/requirements/SRS_finance.md) |
+| Дефекты | 18 найдено (4 критических, 7 высоких), все исправлены | [ISSUES](docs/requirements/ISSUES.md) |
+| Автотесты | 267 (148 модульных, 114 интеграционных, 5 сценарных) + 15 браузерных | [`tests/`](tests/) |
+| Покрытие кода | 94,69 % при пороге 70 % | [COVERAGE](docs/test-results/COVERAGE.md) |
+| Тест-кейсы | 52, пройдены все, TSP 100 % | [TEST_RESULTS](docs/test-results/TEST_RESULTS.md) |
+| Совместимость | Chromium, Firefox, WebKit — 15 проверок, все зелёные | [COMPATIBILITY](docs/ui-compatibility/COMPATIBILITY.md) |
+| API | 37 запросов, 57 проверок, 0 провалов | [API_TESTING](docs/api-security/API_TESTING.md) |
+| Безопасность | 14 проверок: IDOR, прямой URL, ошибки без стека, логирование | [SECURITY](docs/api-security/SECURITY.md) |
+| Нагрузка | 20 пользователей: p95 340 мс, 0 % ошибок; деградация с 80 | [LOAD_RESULTS](docs/performance/LOAD_RESULTS.md) |
+| Линтер | `ruff check .` — чисто | [LINTING](docs/engineering/LINTING.md) |
+| Трассируемость | 22/22 требования покрыты тестами | [TRACEABILITY](docs/engineering/TRACEABILITY.md) |
+
+## CI
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) — три задачи на push и pull request:
+
+1. **линтер** — `ruff check .`;
+2. **тесты и покрытие** — `pytest --cov`, отчёт `coverage.xml` уходит в артефакты;
+3. **браузерные тесты** — `playwright install --with-deps chromium` и `pytest -m ui`.
+
+Конвейер запускается на GitHub; локально выполняются те же команды вручную.
+
+## Команды
 
 | Задача | Команда |
 |---|---|
-| Тесты | `pytest` |
+| Запуск | `flask --app app run --debug` |
+| Все тесты | `pytest` |
 | Покрытие | `pytest --cov --cov-report=term-missing --cov-report=html` |
 | Браузерные тесты | `pytest -m ui` (нужен `playwright install chromium`) |
-| Те же тесты в другом браузере | `UI_BROWSER=firefox pytest -m ui`, `UI_BROWSER=webkit pytest -m ui` |
-| Нагрузка | `locust -f load/locustfile.py` |
+| Другой браузер | `UI_BROWSER=firefox pytest -m ui` |
+| API-коллекция | `newman run docs/api-security/postman/FinanceSystem.postman_collection.json -e docs/api-security/postman/local.postman_environment.json` |
+| Нагрузка | `locust -f load/locustfile.py --headless -u 20 -r 20 -t 20s --host http://127.0.0.1:5005` |
+| Отчёт по нагрузке | `python tools/load_report.py` |
 | Линтер | `ruff check .` |
-| CI (GitHub Actions) | `.github/workflows/ci.yml`: на push/PR — линтер, тесты с покрытием, браузерные тесты |
-| Матрица кроссбраузерности | `python tools/cross_browser_check.py` → `docs/lab4/COMPATIBILITY.md` |
-| Проверки безопасности | `python tools/security_check.py` → `docs/lab4/SECURITY.md` |
-| Скриншоты для отчёта | `python tools/capture_screenshots.py` |
-| API-коллекция и отчёт | `newman run docs/lab4/postman/FinanceSystem.postman_collection.json -e docs/lab4/postman/local.postman_environment.json` |
 
-Перед браузерными тестами один раз выполните `playwright install chromium` (на Windows этого
-достаточно). В WSL без root браузеру нужны системные библиотеки — `sudo playwright install-deps`
-или запуск тестов из Windows.
-| Нагрузка и отчёт | `locust -f load/locustfile.py --headless -u 20 -r 20 -t 20s --host http://127.0.0.1:5005`, затем `python tools/load_report.py` |
+## Ограничения
 
-## 7. Документация
+- Покрытие кода 94,69 %, а не 100 %: непокрытыми остались редкие ветки обработки ошибок.
+- Точка отказа при нагрузке не достигнута: при 400 пользователях ошибок нет, но p95 8,3 с —
+  система деградирует по времени ответа, а не отказывает.
+- Нагрузка гонялась на dev-сервере Flask, генератор — на той же машине, поэтому цифры занижены.
+- CSRF-защита в формах не реализована; пароли хранятся хэшем, сессия — в подписанной cookie.
+- Старый слой `ui/` на tkinter оставлен как история проекта и в веб-версии не используется.
 
-| Документ | Содержание |
-|---|---|
-| [`docs/lab1/SRS_finance.md`](docs/lab1/SRS_finance.md) | Бизнес-требования, 5 use case, 16 функциональных и 6 нефункциональных требований, способ проверки каждого |
-| [`docs/lab1/STATE_DIAGRAM.md`](docs/lab1/STATE_DIAGRAM.md) | Диаграммы состояний заявки на зарплатный проект и счёта |
-| [`ISSUES.md`](docs/lab1/ISSUES.md) | Реестр дефектов: ожидаемый/фактический результат, шаги, важность, срочность |
-| [`docs/lab3/TEST_PLAN.md`](docs/lab3/TEST_PLAN.md) | План тестирования: цели, области, стратегия, критерии, метрики |
-| [`docs/lab3/CHECKLIST.md`](docs/lab3/CHECKLIST.md) | Чек-лист по всем FR: позитивные и негативные проверки |
-| [`docs/lab3/TEST_CASES.md`](docs/lab3/TEST_CASES.md) | 52 тест-кейса с атрибутами и шагами |
-| [`docs/lab3/TEST_RESULTS.md`](docs/lab3/TEST_RESULTS.md) | Результаты прогона, метрики, скриншоты |
-| [`docs/lab3/DEFECT_REPORTS.md`](docs/lab3/DEFECT_REPORTS.md) | Отчёты о дефектах |
-| [`docs/lab4/COMPATIBILITY.md`](docs/lab4/COMPATIBILITY.md) | Матрица кроссбраузерности и проверки вёрстки |
-| [`docs/lab4/API_TESTING.md`](docs/lab4/API_TESTING.md) | Postman-коллекция, связывание токена, отчёт прогона |
-| [`docs/lab4/SECURITY.md`](docs/lab4/SECURITY.md) | Проверки доступа, IDOR, ошибок и логирования |
-| [`docs/lab5/LOAD_PLAN.md`](docs/lab5/LOAD_PLAN.md), [`docs/lab5/LOAD_RESULTS.md`](docs/lab5/LOAD_RESULTS.md) | План нагрузочного тестирования и результаты с графиком |
-| [`docs/lab5/LINTING.md`](docs/lab5/LINTING.md) | Статическая проверка кода: что нашёл и что исправлено |
-| [`docs/lab5/TRACEABILITY.md`](docs/lab5/TRACEABILITY.md) | Матрица трассируемости: требования ↔ тесты ↔ дефекты |
-| [`СДАЧА.md`](СДАЧА.md) | Оглавление гайдов: план и пять файлов по лабораторным |
-| [`readmes/`](readmes/) | Гайды для изучения: план, ЛР1…ЛР5 |
-| [`docs/README.md`](docs/README.md) | Что лежит в папках `lab1`…`lab5` |
-| [`docs/_internal/BLOCKS.md`](docs/_internal/BLOCKS.md) | Журнал изменений по блокам |
-| [`AUDIT.md`](docs/_internal/AUDIT.md) | Разведка перед переносом на Flask |
+---
+
+Учебный проект, БГУИР, 3 курс. Материалы для сдачи — в [`docs/`](docs/README.md),
+разборы и вопросы — в [`docs/learning/`](docs/learning/README.md) и
+[`docs/ВОПРОСЫ_И_ОТВЕТЫ.md`](docs/ВОПРОСЫ_И_ОТВЕТЫ.md).

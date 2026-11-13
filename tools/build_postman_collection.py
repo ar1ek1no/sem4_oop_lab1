@@ -1,7 +1,7 @@
 """Сборка Postman-коллекции и окружения для API (ЛР4 п. 2).
 
 Запуск: `python tools/build_postman_collection.py` — создаёт
-`docs/lab4/postman/FinanceSystem.postman_collection.json` и `...local.postman_environment.json`.
+`docs/api-security/postman/FinanceSystem.postman_collection.json` и `...local.postman_environment.json`.
 
 Коллекция покрывает все варианты использования: вход по токену, справочники, счета,
 переводы, зарплату, роли менеджера и администратора, негативные проверки.
@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-POSTMAN = ROOT / "docs" / "lab4" / "postman"
+POSTMAN = ROOT / "docs" / "api-security" / "postman"
 BASE_URL = "http://127.0.0.1:5005"
 
 

@@ -1,6 +1,6 @@
 """Отчёт по нагрузочному тестированию (ЛР5 п. 3).
 
-Читает CSV-отчёты Locust из `docs/lab5/load/`, строит таблицу, график и `docs/lab5/LOAD_RESULTS.md`.
+Читает CSV-отчёты Locust из `docs/performance/load/`, строит таблицу, график и `docs/performance/LOAD_RESULTS.md`.
 
 Запуск: `python tools/load_report.py` (после прогонов Locust).
 """
@@ -14,7 +14,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parent.parent
-LOAD = ROOT / "docs" / "lab5" / "load"
+LOAD = ROOT / "docs" / "performance" / "load"
 
 
 def read_csv(path: Path) -> list[dict]:
@@ -231,7 +231,7 @@ def main() -> None:
         "",
     ]
 
-    (ROOT / "docs" / "lab5" / "LOAD_RESULTS.md").write_text("\n".join(lines), encoding="utf-8")
+    (ROOT / "docs" / "performance" / "LOAD_RESULTS.md").write_text("\n".join(lines), encoding="utf-8")
     print(f"готово: docs/LOAD_RESULTS.md, {chart}")
     for point in points:
         print(point)

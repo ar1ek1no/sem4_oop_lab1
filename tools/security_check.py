@@ -2,7 +2,7 @@
 
 Поднимает приложение на временной БД и проверяет: доступ к закрытым зонам без входа,
 подмену идентификатора (IDOR), отсутствие технических деталей в ошибках, логирование.
-Результат — `docs/lab4/SECURITY.md` с фактическими ответами сервера.
+Результат — `docs/api-security/SECURITY.md` с фактическими ответами сервера.
 
 Запуск: `python tools/security_check.py`.
 """
@@ -19,8 +19,8 @@ from config import TestConfig  # noqa: E402
 from extensions import db  # noqa: E402
 from models import ACC_CHECKING, Account, Bank, Enterprise, User  # noqa: E402
 
-DB_PATH = ROOT / "docs" / "lab4" / "_security.db"
-LOG_PATH = ROOT / "docs" / "lab4" / "_security.log"
+DB_PATH = ROOT / "docs" / "api-security" / "_security.db"
+LOG_PATH = ROOT / "docs" / "api-security" / "_security.log"
 
 
 def seed(app):
@@ -219,7 +219,7 @@ def main() -> None:
         f"**Итог:** {'все проверки пройдены' if not failed else 'проблемы: ' + ', '.join(failed)}.",
         "",
     ]
-    (ROOT / "docs" / "lab4" / "SECURITY.md").write_text("\n".join(lines), encoding="utf-8")
+    (ROOT / "docs" / "api-security" / "SECURITY.md").write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines))
     for path in (DB_PATH, LOG_PATH):
         path.unlink(missing_ok=True)

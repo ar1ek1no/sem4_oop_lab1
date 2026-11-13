@@ -4,7 +4,7 @@
 пустые списки и «много элементов») и прогоняет одинаковый набор проверок в трёх
 браузерах: Chromium, Firefox, WebKit. Плюс мобильная эмуляция 390×844 и масштаб 150 %.
 
-Запуск: `python tools/cross_browser_check.py` — пишет `docs/lab4/COMPATIBILITY.md`.
+Запуск: `python tools/cross_browser_check.py` — пишет `docs/ui-compatibility/COMPATIBILITY.md`.
 """
 import os
 import sys
@@ -211,7 +211,7 @@ def to_markdown(result: dict) -> str:
 
 
 def main() -> None:
-    db_path = ROOT / "docs" / "lab4" / "_compat.db"
+    db_path = ROOT / "docs" / "ui-compatibility" / "_compat.db"
     if db_path.exists():
         db_path.unlink()
 
@@ -235,7 +235,7 @@ def main() -> None:
     db_path.unlink(missing_ok=True)
 
     markdown = to_markdown(result)
-    (ROOT / "docs" / "lab4" / "COMPATIBILITY.md").write_text(markdown, encoding="utf-8")
+    (ROOT / "docs" / "ui-compatibility" / "COMPATIBILITY.md").write_text(markdown, encoding="utf-8")
     print(markdown)
 
 

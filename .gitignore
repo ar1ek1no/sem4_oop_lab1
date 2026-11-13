@@ -10,7 +10,7 @@ __pycache__/
 coverage.xml
 htmlcov/
 .ruff_cache/
-screenshots/
+/screenshots/
 
 # нагрузка
 locust-report/
@@ -29,10 +29,10 @@ logs/
 finance_copy.db
 
 # временные файлы скриптов отчётности
-docs/lab3/_screenshots.db
-docs/lab4/_security.db
-docs/lab4/_security.log
-docs/lab4/_compat.db
+docs/test-results/_screenshots.db
+docs/api-security/_security.db
+docs/api-security/_security.log
+docs/ui-compatibility/_compat.db
 
 # отчёт прогона тестов — часть отчёта ЛР3, исключение из *.log
-!docs/lab3/test-run.log
+!docs/test-results/test-run.log

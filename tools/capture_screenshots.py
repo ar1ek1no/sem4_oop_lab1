@@ -23,8 +23,8 @@ from repositories.account_repository import AccountRepository  # noqa: E402
 from services.bank_service import BankService  # noqa: E402
 from services.manager_service import ManagerService  # noqa: E402
 
-SHOTS = ROOT / "docs" / "lab3" / "screenshots"
-DB_PATH = ROOT / "docs" / "lab3" / "_screenshots.db"
+SHOTS = ROOT / "docs" / "test-results" / "screenshots"
+DB_PATH = ROOT / "docs" / "test-results" / "_screenshots.db"
 
 DESKTOP = {"viewport": {"width": 1440, "height": 900}, "locale": "ru-RU"}
 MOBILE = {"viewport": {"width": 390, "height": 844}, "locale": "ru-RU", "is_mobile": True}
