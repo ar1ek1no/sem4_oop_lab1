@@ -118,6 +118,10 @@ flask --app app run --debug     # http://127.0.0.1:5000
 | Проверки безопасности | `python tools/security_check.py` → `docs/lab4/SECURITY.md` |
 | Скриншоты для отчёта | `python tools/capture_screenshots.py` |
 | API-коллекция и отчёт | `newman run docs/lab4/postman/FinanceSystem.postman_collection.json -e docs/lab4/postman/local.postman_environment.json` |
+
+Перед браузерными тестами один раз выполните `playwright install chromium` (на Windows этого
+достаточно). В WSL без root браузеру нужны системные библиотеки — `sudo playwright install-deps`
+или запуск тестов из Windows.
 | Нагрузка и отчёт | `locust -f load/locustfile.py --headless -u 20 -r 20 -t 20s --host http://127.0.0.1:5005`, затем `python tools/load_report.py` |
 
 ## 7. Документация

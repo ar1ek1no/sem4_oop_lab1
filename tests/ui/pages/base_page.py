@@ -1,7 +1,7 @@
 """Page Object: общие операции страницы."""
 from pathlib import Path
 
-SCREENSHOTS = Path(__file__).resolve().parent.parent.parent / "screenshots"
+SCREENSHOTS = Path(__file__).resolve().parents[3] / "screenshots"
 
 
 class BasePage:
