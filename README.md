@@ -117,7 +117,7 @@ flask --app app run --debug       # http://127.0.0.1:5000
 | [`docs/ui-compatibility/`](docs/ui-compatibility/README.md) | **как выглядит и работает в браузерах** | [матрица «проверка × браузер»](docs/ui-compatibility/COMPATIBILITY.md) |
 | [`docs/performance/`](docs/performance/README.md) | **сколько выдерживает** | [план нагрузки](docs/performance/LOAD_PLAN.md), [результаты и график](docs/performance/LOAD_RESULTS.md) |
 | [`docs/engineering/`](docs/engineering/README.md) | **какое качество кода и связей** | [линтер](docs/engineering/LINTING.md), [матрица трассируемости](docs/engineering/TRACEABILITY.md) |
-| [`docs/learning/`](docs/learning/README.md) | **как это устроено и как объяснять** | 6 разборов: план и по одному на каждую лабораторную |
+| [`archive/`](archive/README.md) | **как это устроено и как объяснять** | 6 разборов лабораторных: план и по одному на каждую |
 | [`docs/internal/`](docs/internal/README.md) | служебное | журнал изменений, разведка, стартовый промпт |
 | [`docs/ВОПРОСЫ_И_ОТВЕТЫ.md`](docs/ВОПРОСЫ_И_ОТВЕТЫ.md) | теория к защите | все вопросы списка + дополнительные, с ответами |
 
@@ -173,5 +173,5 @@ flask --app app run --debug       # http://127.0.0.1:5000
 ---
 
 Учебный проект, БГУИР, 3 курс. Материалы для сдачи — в [`docs/`](docs/README.md),
-разборы и вопросы — в [`docs/learning/`](docs/learning/README.md) и
+разборы — в [`archive/`](archive/README.md), теория к защите — в
 [`docs/ВОПРОСЫ_И_ОТВЕТЫ.md`](docs/ВОПРОСЫ_И_ОТВЕТЫ.md).
