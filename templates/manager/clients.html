@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Регистрации — Финансовая система{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Регистрации клиентов</h1>
+  <p class="muted">Подтвердите или отклоните заявку. Пока регистрация не подтверждена, клиент не может войти.</p>
+</div>
+
+<section class="card">
+  {% if clients %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Логин</th><th>ФИО</th><th>Дата заявки</th><th>Действия</th></tr>
+        </thead>
+        <tbody>
+          {% for client in clients %}
+            <tr>
+              <td data-label="Логин">{{ client.username }}</td>
+              <td data-label="ФИО" class="cell-text">{{ client.full_name or '—' }}</td>
+              <td data-label="Дата заявки" class="nowrap">{{ client.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+              <td data-label="Действия" class="actions">
+                <form method="post" action="{{ url_for('manager.approve_client', user_id=client.id) }}" class="inline-form">
+                  <button type="submit" class="button button-small button-primary">Подтвердить</button>
+                </form>
+                <form method="post" action="{{ url_for('manager.reject_client', user_id=client.id) }}" class="inline-form"
+                      data-confirm="Отклонить регистрацию {{ client.username }}?">
+                  <button type="submit" class="button button-small button-danger">Отклонить</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">Новых регистраций нет.</p>
+  {% endif %}
+</section>
+{% endblock %}

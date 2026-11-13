@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Зарплата — Финансовая система{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Зарплатный проект</h1>
+  <p class="muted">
+    Заявку на предприятие подтверждает менеджер. Зарплата начисляется один раз за расчётный период
+    на любой ваш незаблокированный счёт.
+  </p>
+</div>
+
+<div class="grid grid-2">
+  <section class="card">
+    <h2>Мои заявки</h2>
+    {% if requests %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Предприятие</th><th>Статус</th><th>Последняя выплата</th></tr>
+          </thead>
+          <tbody>
+            {% for item in requests %}
+              <tr>
+                <td class="cell-text">{{ item.enterprise.name if item.enterprise else '—' }}</td>
+                <td>
+                  <span class="badge
+                    {% if item.status == 'approved' %}badge-success
+                    {% elif item.status == 'pending' %}badge-warning
+                    {% else %}badge-muted{% endif %}">
+                    {{ REQUEST_STATUS_TITLES.get(item.status, item.status) }}
+                  </span>
+                </td>
+                <td>{{ item.last_paid_at.strftime('%d.%m.%Y %H:%M') if item.last_paid_at else '—' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty">Заявок пока нет.</p>
+    {% endif %}
+  </section>
+
+  <aside class="card">
+    <h2>Подать заявку</h2>
+    {% if enterprises %}
+      <form method="post" action="{{ url_for('client.salary_apply') }}" class="form">
+        <label class="field">
+          <span class="field-label">Предприятие</span>
+          <select name="enterprise_id" required>
+            {% for enterprise in enterprises %}
+              <option value="{{ enterprise.id }}">{{ enterprise.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button type="submit" class="button button-primary">Отправить заявку</button>
+      </form>
+    {% else %}
+      <p class="empty">В системе нет предприятий.</p>
+    {% endif %}
+  </aside>
+</div>
+
+<section class="card">
+  <h2>Получить зарплату</h2>
+  {% if employments %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Предприятие</th><th class="num">Оклад</th><th>Счёт зачисления</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for employment in employments %}
+            <tr>
+              <td class="cell-text">{{ employment.enterprise.name if employment.enterprise else '—' }}</td>
+              <td class="num">{{ employment.salary_amount|money }}</td>
+              <td>
+                {% if accounts %}
+                  <form method="post" action="{{ url_for('client.salary_pay') }}" class="inline-form">
+                    <input type="hidden" name="enterprise_id" value="{{ employment.enterprise_id }}">
+                    <select name="account_id" required>
+                      {% for account in accounts %}
+                        <option value="{{ account.id }}">
+                          №{{ account.id }} · {{ ACCOUNT_TYPE_TITLES.get(account.acc_type, account.acc_type) }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit" class="button button-small button-primary">Получить</button>
+                  </form>
+                {% else %}
+                  <span class="muted">нет доступных счетов</span>
+                {% endif %}
+              </td>
+              <td></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">
+      Вы пока не в штате ни одного предприятия. Подайте заявку и дождитесь подтверждения менеджером.
+    </p>
+  {% endif %}
+</section>
+{% endblock %}

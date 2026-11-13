@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Счета — Финансовая система{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Счета и вклады</h1>
+  <p class="muted">Счета можно открывать в разных банках и переводить между ними. Закрыть счёт можно только с нулевым балансом.</p>
+</div>
+
+<div class="grid grid-2">
+  <section class="card">
+    <h2>Мои счета</h2>
+    {% if accounts %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>№</th><th>Банк</th><th>Тип</th>
+              <th class="num">Баланс</th><th>Статус</th><th>Действие</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for account in accounts %}
+              <tr class="{% if account.is_closed %}row-closed{% endif %}">
+                <td data-label="№">{{ account.id }}</td>
+                <td data-label="Банк" class="cell-text">{{ account.bank.name if account.bank else '—' }}</td>
+                <td data-label="Тип">{{ ACCOUNT_TYPE_TITLES.get(account.acc_type, account.acc_type) }}</td>
+                <td data-label="Баланс" class="num">{{ account.balance|money }}</td>
+                <td data-label="Статус">
+                  {% if account.is_closed %}
+                    <span class="badge badge-muted">закрыт</span>
+                  {% elif account.is_blocked %}
+                    <span class="badge badge-warning">заблокирован</span>
+                  {% else %}
+                    <span class="badge badge-success">открыт</span>
+                  {% endif %}
+                </td>
+                <td data-label="Действие">
+                  {% if account.is_closed %}
+                    <span class="muted">—</span>
+                  {% elif account.is_blocked %}
+                    <button class="button button-small" disabled
+                            title="Заблокированный счёт сначала разблокирует менеджер">Закрыть</button>
+                  {% elif account.balance != 0 %}
+                    <button class="button button-small" disabled
+                            title="Сначала переведите остаток: закрывать можно только с нулевым балансом">Закрыть</button>
+                  {% else %}
+                    <form method="post" action="{{ url_for('client.close_account', account_id=account.id) }}"
+                          class="inline-form" data-confirm="Закрыть счёт №{{ account.id }}?">
+                      <button type="submit" class="button button-small button-danger">Закрыть</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty">Счетов пока нет. Откройте первый — форма справа.</p>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('client.accumulate') }}" class="inline-form spaced-top">
+      <button type="submit" class="button button-secondary">Начислить 5 % на вклады</button>
+    </form>
+  </section>
+
+  <aside class="card">
+    <h2>Открыть счёт</h2>
+    {% if banks %}
+      <form method="post" action="{{ url_for('client.open_account') }}" class="form">
+        <label class="field">
+          <span class="field-label">Банк</span>
+          <select name="bank_id" required>
+            {% for bank in banks %}
+              <option value="{{ bank.id }}">{{ bank.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Тип</span>
+          <select name="acc_type">
+            <option value="checking">{{ ACCOUNT_TYPE_TITLES['checking'] }}</option>
+            <option value="saving">{{ ACCOUNT_TYPE_TITLES['saving'] }} (5 % годовых)</option>
+          </select>
+        </label>
+        <button type="submit" class="button button-primary">Открыть счёт</button>
+      </form>
+    {% else %}
+      <p class="empty">В системе нет ни одного банка — обратитесь к администратору.</p>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ status }} — ошибка{% endblock %}
+{% block content %}
+<section class="card error-card">
+  <p class="error-code">{{ status }}</p>
+  <h1>Ошибка запроса</h1>
+  <p class="muted">{{ message }}</p>
+  <a class="button button-primary" href="{{ url_for('index') }}">На главную</a>
+</section>
+{% endblock %}

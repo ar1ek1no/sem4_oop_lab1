@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Вход — Финансовая система{% endblock %}
+{% block content %}
+<section class="card auth-card">
+  <h1>Вход в систему</h1>
+  <p class="muted">Войдите под своей учётной записью. Регистрация доступна только клиентам.</p>
+
+  <form method="post" action="{{ url_for('auth.login', next=next) }}" class="form" novalidate>
+    <label class="field">
+      <span class="field-label">Логин</span>
+      <input type="text" name="username" autocomplete="username" required autofocus
+             placeholder="например, client1">
+    </label>
+    <label class="field">
+      <span class="field-label">Пароль</span>
+      <input type="password" name="password" autocomplete="current-password" required
+             placeholder="не короче 6 символов">
+    </label>
+    <button type="submit" class="button button-primary">Войти</button>
+  </form>
+
+  <p class="muted">Нет учётной записи? <a href="{{ url_for('auth.register') }}">Зарегистрироваться</a></p>
+</section>
+{% endblock %}

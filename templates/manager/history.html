@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}История клиента — Финансовая система{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>История операций клиента</h1>
+  <p class="muted">Поиск по номеру пользователя. Менеджер видит только историю, но не может изменить операцию.</p>
+</div>
+
+<section class="card">
+  <form method="get" action="{{ url_for('manager.history') }}" class="form form-inline">
+    <label class="field">
+      <span class="field-label">ID клиента</span>
+      <input type="number" name="user_id" min="1" value="{{ user_id or '' }}" required>
+    </label>
+    <button type="submit" class="button button-primary">Показать</button>
+  </form>
+</section>
+
+{% if client %}
+  <section class="card">
+    <h2>{{ client.full_name or client.username }}
+      <span class="muted">({{ client.username }}, ID {{ client.id }})</span>
+    </h2>
+    {% if logs %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Когда</th><th>Действие</th><th class="num">Сумма</th>
+              <th>Откуда</th><th>Куда</th><th>Статус</th></tr>
+          </thead>
+          <tbody>
+            {% for log in logs %}
+              <tr class="{% if log.status == 'cancelled' %}row-closed{% endif %}">
+                <td data-label="Когда" class="nowrap">{{ log.timestamp.strftime('%d.%m.%Y %H:%M') }}</td>
+                <td data-label="Действие">{{ log.action_title }}</td>
+                <td data-label="Сумма" class="num">{{ log.amount|money if log.amount else '—' }}</td>
+                <td data-label="Откуда">{{ ('№' ~ log.sender_acc_id) if log.sender_acc_id else '—' }}</td>
+                <td data-label="Куда">{{ ('№' ~ log.receiver_acc_id) if log.receiver_acc_id else '—' }}</td>
+                <td data-label="Статус">
+                  {% if log.status == 'cancelled' %}
+                    <span class="badge badge-muted">отменено</span>
+                  {% else %}
+                    <span class="badge badge-success">выполнено</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty">Операций у клиента нет.</p>
+    {% endif %}
+  </section>
+{% elif user_id %}
+  <section class="card"><p class="empty">Клиент с ID {{ user_id }} не найден.</p></section>
+{% endif %}
+{% endblock %}

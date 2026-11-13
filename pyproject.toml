@@ -1,0 +1,59 @@
+[project]
+name = "finance-system"
+version = "0.2.0"
+description = "Управление финансовой системой: клиент, менеджер, администратор (Flask + SQLite)"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -m \"not ui\""
+markers = [
+    "ui: браузерные тесты Playwright (нужен установленный браузер)",
+    "slow: длинные тесты",
+]
+
+[tool.coverage.run]
+source = ["."]
+branch = true
+omit = [
+    "tests/*",
+    ".venv/*",
+    "seed.py",
+    "main.py",
+    "load/*",
+    "ui/*",          # старый tkinter-слой, в вебе не используется
+    "docs/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 70
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = [".venv", "ui", "docs", "__pycache__"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "B", "UP", "C4", "SIM", "S", "PT", "RUF", "PL", "RET", "COM", "ARG"]
+ignore = [
+    # осознанные исключения: причины разобраны в docs/LINTING.md
+    "E501",       # длину строки контролируем глазами, переносы по смыслу
+    "RUF001", "RUF002", "RUF003",  # кириллица в тексте проекта — не опечатка
+    "PLR2004",    # магические числа в сравнениях читаются лучше констант
+    "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR0917",  # guard-ветки сервисов
+    "S608",       # SQL собирается из констант миграции, а не из ввода пользователя
+    "S105",       # dev-ключ SECRET_KEY подставляется только при локальном запуске
+]
+
+[tool.ruff.lint.per-file-ignores]
+# в тестах пароли, временные файлы и «магические» значения — часть данных
+"tests/*" = ["S101", "S105", "S106", "S107", "S108", "ARG001", "ARG002", "ARG005", "PT018"]
+# скрипты отчётности работают с локальными файлами и не являются частью приложения
+"tools/*" = ["S106", "S107", "S108", "S311", "T201", "PLC0415", "ARG001"]
+"load/*" = ["S311", "ARG001"]

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Финансовая система{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="logo" href="{{ url_for('index') }}" title="На главную">
+    <span class="logo-mark" aria-hidden="true">₽</span>
+    <span class="logo-text">Финансовая система</span>
+  </a>
+
+  {% if g.user %}
+  <nav class="nav" aria-label="Основная навигация">
+    {% if g.user.role == 'client' %}
+      <a href="{{ url_for('client.accounts') }}" class="{% if request.path.startswith('/accounts') %}active{% endif %}">Счета</a>
+      <a href="{{ url_for('client.transfer') }}" class="{% if request.path.startswith('/transfer') %}active{% endif %}">Перевод</a>
+      <a href="{{ url_for('client.salary') }}" class="{% if request.path.startswith('/salary') %}active{% endif %}">Зарплата</a>
+      <a href="{{ url_for('client.history') }}" class="{% if request.path.startswith('/history') %}active{% endif %}">История</a>
+    {% elif g.user.role == 'manager' %}
+      <a href="{{ url_for('manager.clients') }}" class="{% if request.path.startswith('/manager/clients') %}active{% endif %}">Регистрации</a>
+      <a href="{{ url_for('manager.requests_list') }}" class="{% if request.path.startswith('/manager/requests') %}active{% endif %}">Заявки</a>
+      <a href="{{ url_for('manager.accounts') }}" class="{% if request.path.startswith('/manager/accounts') %}active{% endif %}">Счета</a>
+      <a href="{{ url_for('manager.enterprises') }}" class="{% if request.path.startswith('/manager/enterprises') %}active{% endif %}">Предприятия</a>
+      <a href="{{ url_for('manager.history') }}" class="{% if request.path.startswith('/manager/history') %}active{% endif %}">История</a>
+    {% elif g.user.role == 'admin' %}
+      <a href="{{ url_for('admin.logs') }}" class="{% if request.path.startswith('/admin') %}active{% endif %}">Журнал</a>
+    {% endif %}
+  </nav>
+
+  <div class="userbox">
+    <span class="user-name">{{ g.user.full_name or g.user.username }}</span>
+    <span class="badge badge-role">{{ g.user.role_title }}</span>
+    <form method="post" action="{{ url_for('auth.logout') }}" class="inline-form">
+      <button type="submit" class="link-button">Выйти</button>
+    </form>
+  </div>
+  {% endif %}
+</header>
+
+<main class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flash-list" role="status">
+        {% for category, message in messages %}
+          <li class="flash flash-{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  <span>Учебный проект: «Управление финансовой системой»</span>
+  <span>Flask · SQLite · Flask-SQLAlchemy</span>
+</footer>
+</body>
+</html>

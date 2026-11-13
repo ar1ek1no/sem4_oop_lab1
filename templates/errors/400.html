@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}400 — неверный запрос{% endblock %}
+{% block content %}
+<section class="card error-card">
+  <p class="error-code">400</p>
+  <h1>Неверный запрос</h1>
+  <p class="muted">{{ message or 'Сервер не смог разобрать запрос.' }}</p>
+  <a class="button button-primary" href="{{ url_for('index') }}">На главную</a>
+</section>
+{% endblock %}

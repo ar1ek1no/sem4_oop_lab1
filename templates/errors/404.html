@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}404 — страница не найдена{% endblock %}
+{% block content %}
+<section class="card error-card">
+  <p class="error-code">404</p>
+  <h1>Страница не найдена</h1>
+  <p class="muted">{{ message or 'Такой страницы нет. Проверьте адрес.' }}</p>
+  <a class="button button-primary" href="{{ url_for('index') }}">На главную</a>
+</section>
+{% endblock %}

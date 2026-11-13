@@ -1,55 +1,107 @@
-import customtkinter as ctk
-from ui.login_frame import LoginFrame
-from ui.client_frame import ClientFrame
-from ui.manager_frame import ManagerFrame
-from ui.admin_frame import AdminFrame
+"""Точка сборки приложения.
+
+`flask --app app run` подхватывает фабрику `create_app`.
+"""
+import logging
+
+from flask import Flask, g, jsonify, redirect, render_template, request, url_for
+from werkzeug.exceptions import HTTPException
+
+from config import Config
+from db_migrate import migrate_legacy_schema
+from extensions import db
+from logging_setup import configure_logging
+from models import ACCOUNT_TYPE_TITLES, REQUEST_STATUS_TITLES, ROLE_ADMIN, ROLE_CLIENT, ROLE_MANAGER
+from services.validators import format_money
+from web.admin import bp as admin_bp
+from web.api import bp as api_bp
+from web.auth import bp as auth_bp
+from web.client import bp as client_bp
+from web.helpers import load_current_user
+from web.manager import bp as manager_bp
+
+HTTP_ERROR_MESSAGES = {
+    400: "неверный запрос: проверьте переданные данные",
+    401: "для этого действия нужно войти в систему",
+    403: "у вашей роли нет прав на это действие",
+    404: "страница или объект не найдены",
+    405: "такой метод запроса не поддерживается",
+}
 
 
-class App(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-        self.title("фин тех is calling... five nights at freddy's btw")
-        self.geometry("900x700")
-        self.current_user = None
-        self.show_login()
+def create_app(config_class: type = Config) -> Flask:
+    app = Flask(__name__)
+    app.config.from_object(config_class)
+    app.json.ensure_ascii = False  # кириллица в JSON без \u-escape
+    configure_logging(app)
+    db.init_app(app)
 
-    def clear_screen(self):
-        for widget in self.winfo_children():
-            widget.destroy()
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(client_bp)
+    app.register_blueprint(manager_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(api_bp)
 
-    def show_login(self):
-        self.clear_screen()
-        # фрейм логина
-        login_view = LoginFrame(self, on_login_success=self.login_success)
-        login_view.pack(fill="both", expand=True)
+    app.before_request(load_current_user)
+    app.jinja_env.filters["money"] = format_money
+    app.jinja_env.globals.update(
+        ACCOUNT_TYPE_TITLES=ACCOUNT_TYPE_TITLES,
+        REQUEST_STATUS_TITLES=REQUEST_STATUS_TITLES,
+    )
 
-    def login_success(self, user):
-        self.current_user = user
-        self.show_dashboard()
+    @app.route("/")
+    def index():
+        if g.user is None:
+            return redirect(url_for("auth.login"))
+        return redirect(_home_by_role(g.user.role))
 
-    def show_dashboard(self):
-        self.clear_screen()
+    @app.errorhandler(HTTPException)
+    def handle_http_error(error: HTTPException):
+        status = error.code or 500
+        # своё описание из abort(description=...) важнее стандартного английского
+        default = type(error).description
+        message = error.description if error.description and error.description != default else None
+        message = message or HTTP_ERROR_MESSAGES.get(status, "ошибка запроса")
+        if _wants_json():
+            return jsonify({"error": message, "status": status}), status
+        template = {400: "errors/400.html", 401: "errors/401.html",
+                    403: "errors/403.html", 404: "errors/404.html"}.get(status)
+        if template is None:
+            return render_template("errors/generic.html", status=status, message=message), status
+        return render_template(template, message=message), status
 
-        sidebar = ctk.CTkFrame(self, width=150)
-        sidebar.pack(side="left", fill="y", padx=5, pady=5)
+    @app.errorhandler(Exception)
+    def handle_unexpected_error(error: Exception):
+        app.logger.exception("Необработанная ошибка: %s", error)
+        if _wants_json():
+            return jsonify({"error": "внутренняя ошибка сервера", "status": 500}), 500
+        return render_template("errors/500.html", message="внутренняя ошибка сервера"), 500
 
-        ctk.CTkLabel(sidebar, text=f"юзер: {self.current_user.username}\nроль: {self.current_user.role}").pack(pady=20)
-        ctk.CTkButton(sidebar, text="выход", command=self.show_login, fg_color="gray").pack(side="bottom", pady=20)
+    with app.app_context():
+        db.create_all()
+        migrate_legacy_schema(db.engine, app.logger)
 
-        # контентная часть зависит от роли
-        content_area = ctk.CTkFrame(self)
-        content_area.pack(side="right", fill="both", expand=True, padx=5, pady=5)
+    app.logger.info("Приложение собрано: %s", app.config["SQLALCHEMY_DATABASE_URI"])
+    return app
 
-        if self.current_user.role == "client":
-            view = ClientFrame(content_area, self.current_user, self.show_login)
-        elif self.current_user.role == "manager":
-            view = ManagerFrame(content_area, self.current_user, self.show_login)
-        elif self.current_user.role == "admin":
-            view = AdminFrame(content_area, self.current_user, self.show_login)
 
-        view.pack(fill="both", expand=True)
+def _home_by_role(role: str) -> str:
+    if role == ROLE_CLIENT:
+        return url_for("client.accounts")
+    if role == ROLE_MANAGER:
+        return url_for("manager.clients")
+    if role == ROLE_ADMIN:
+        return url_for("admin.logs")
+    return url_for("auth.login")
+
+
+def _wants_json() -> bool:
+    """Ошибки API отдаются JSON-ом, ошибки страниц — HTML-ом (NFR-3, ЛР4)."""
+    if request.path.startswith("/api/"):
+        return True
+    return request.accept_mimetypes.best == "application/json"
 
 
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    logging.basicConfig(level=logging.INFO)
+    create_app().run(debug=True)

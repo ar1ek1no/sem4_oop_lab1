@@ -1,10 +1,17 @@
-from models import session, Enterprise
+"""Репозиторий предприятий."""
+from extensions import db
+from models import Enterprise
+
 
 class EnterpriseRepository:
     @staticmethod
-    def get_all_enterprises():
-        return session.query(Enterprise).all()
+    def get_all() -> list[Enterprise]:
+        return db.session.query(Enterprise).order_by(Enterprise.name).all()
 
     @staticmethod
-    def get_enterprise_by_id(ent_id: int):
-        return session.query(Enterprise).filter(Enterprise.id == ent_id).first()
+    def get_by_id(enterprise_id: int) -> Enterprise | None:
+        return db.session.get(Enterprise, enterprise_id)
+
+    @staticmethod
+    def get_by_name(name: str) -> Enterprise | None:
+        return db.session.query(Enterprise).filter(Enterprise.name == name).first()

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Перевод — Финансовая система{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Перевод между своими счетами</h1>
+  <p class="muted">Перевод выполняется только с вашего счёта. С заблокированного счёта переводить нельзя.</p>
+</div>
+
+<div class="grid grid-2">
+  <section class="card">
+    <h2>Новый перевод</h2>
+    {% if accounts|length < 2 %}
+      <p class="empty">Нужно минимум два открытых счёта. Откройте ещё один на странице
+        <a href="{{ url_for('client.accounts') }}">«Счета»</a>.</p>
+    {% else %}
+      <form method="post" action="{{ url_for('client.transfer') }}" class="form">
+        <label class="field">
+          <span class="field-label">Списать с</span>
+          <select name="from_id" required>
+            {% for account in accounts %}
+              <option value="{{ account.id }}">
+                №{{ account.id }} · {{ ACCOUNT_TYPE_TITLES.get(account.acc_type, account.acc_type) }} ·
+                {{ account.bank.name if account.bank else '—' }} · {{ account.balance|money }}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Зачислить на</span>
+          <select name="to_id" required>
+            {% for account in accounts %}
+              <option value="{{ account.id }}">
+                №{{ account.id }} · {{ ACCOUNT_TYPE_TITLES.get(account.acc_type, account.acc_type) }} ·
+                {{ account.bank.name if account.bank else '—' }}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Сумма, BYN</span>
+          <input type="text" name="amount" inputmode="decimal" required placeholder="100.00">
+        </label>
+        <button type="submit" class="button button-primary">Перевести</button>
+      </form>
+    {% endif %}
+  </section>
+
+  <aside class="card">
+    <h2>Доступно</h2>
+    {% if accounts %}
+      <ul class="list">
+        {% for account in accounts %}
+          <li>
+            <span class="list-title">№{{ account.id }} ·
+              {{ ACCOUNT_TYPE_TITLES.get(account.acc_type, account.acc_type) }}</span>
+            <span class="list-value">{{ account.balance|money }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="muted">Всего на счетах: {{ balance|money }}</p>
+    {% else %}
+      <p class="empty">Открытых счетов нет.</p>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

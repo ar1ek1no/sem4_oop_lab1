@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Регистрация — Финансовая система{% endblock %}
+{% block content %}
+<section class="card auth-card">
+  <h1>Регистрация клиента</h1>
+  <p class="muted">
+    После отправки заявка попадёт менеджеру. Войти можно только после подтверждения.
+  </p>
+
+  <form method="post" action="{{ url_for('auth.register') }}" class="form" novalidate>
+    <label class="field {% if errors.username %}field-error{% endif %}">
+      <span class="field-label">Логин</span>
+      <input type="text" name="username" autocomplete="username" required autofocus
+             minlength="3" maxlength="80" placeholder="латиница, цифры, _ . -">
+      {% if errors.username %}<span class="field-message">{{ errors.username }}</span>{% endif %}
+    </label>
+
+    <label class="field {% if errors.full_name %}field-error{% endif %}">
+      <span class="field-label">ФИО</span>
+      <input type="text" name="full_name" autocomplete="name" required maxlength="200"
+             placeholder="Иванова Мария Сергеевна">
+      {% if errors.full_name %}<span class="field-message">{{ errors.full_name }}</span>{% endif %}
+    </label>
+
+    <label class="field {% if errors.password %}field-error{% endif %}">
+      <span class="field-label">Пароль</span>
+      <input type="password" name="password" autocomplete="new-password" required
+             minlength="6" maxlength="128" placeholder="не короче 6 символов">
+      {% if errors.password %}<span class="field-message">{{ errors.password }}</span>{% endif %}
+    </label>
+
+    <button type="submit" class="button button-primary">Отправить заявку</button>
+  </form>
+
+  <p class="muted">Уже есть учётная запись? <a href="{{ url_for('auth.login') }}">Войти</a></p>
+</section>
+{% endblock %}

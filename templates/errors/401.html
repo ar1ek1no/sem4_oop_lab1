@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}401 — нужен вход{% endblock %}
+{% block content %}
+<section class="card error-card">
+  <p class="error-code">401</p>
+  <h1>Нужен вход</h1>
+  <p class="muted">{{ message or 'Для этого действия нужно войти в систему.' }}</p>
+  <a class="button button-primary" href="{{ url_for('auth.login') }}">Войти</a>
+</section>
+{% endblock %}

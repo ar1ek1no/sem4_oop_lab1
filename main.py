@@ -1,9 +1,8 @@
-from models import init_db
-from app import App
+"""Точка запуска без Flask-CLI: `python main.py`.
 
-if __name__ == "__main__": # проверка, есть ли таблицы
-    init_db()
+Равнозначна `flask --app app run`.
+"""
+from app import create_app
 
-    # интерфейс
-    app = App()
-    app.mainloop()
+if __name__ == "__main__":
+    create_app().run(debug=True)

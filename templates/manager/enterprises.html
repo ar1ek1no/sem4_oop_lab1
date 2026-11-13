@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Предприятия — Финансовая система{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Предприятия и штат</h1>
+  <p class="muted">Сотрудник попадает в штат после подтверждения заявки. Оклад используется при выплате зарплаты.</p>
+</div>
+
+<div class="grid grid-2">
+  {% for enterprise, staff in data %}
+    <section class="card">
+      <h2 class="cell-text">{{ enterprise.name }}</h2>
+      {% if staff %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Сотрудник</th><th class="num">Оклад</th><th>В штате с</th><th></th></tr></thead>
+            <tbody>
+              {% for employment in staff %}
+                <tr>
+                  <td data-label="Сотрудник">
+                    <span class="cell-text">{{ employment.user.full_name if employment.user else '—' }}</span>
+                    <span class="muted">({{ employment.user.username if employment.user else '—' }})</span>
+                  </td>
+                  <td data-label="Оклад" class="num">{{ employment.salary_amount|money }}</td>
+                  <td data-label="В штате с" class="nowrap">{{ employment.hired_at.strftime('%d.%m.%Y') }}</td>
+                  <td data-label="Действие">
+                    <form method="post"
+                          action="{{ url_for('manager.fire_employee', enterprise_id=enterprise.id, user_id=employment.user_id) }}"
+                          class="inline-form" data-confirm="Уволить сотрудника?">
+                      <button type="submit" class="button button-small button-danger">Уволить</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="empty">Сотрудников нет.</p>
+      {% endif %}
+    </section>
+  {% else %}
+    <section class="card"><p class="empty">Предприятий нет.</p></section>
+  {% endfor %}
+</div>
+{% endblock %}

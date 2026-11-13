@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Счета — Финансовый контроль{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Счета клиентов</h1>
+  <p class="muted">Блокировка запрещает переводы с счёта и на счёт. Заблокированный счёт нельзя закрыть.</p>
+</div>
+
+<section class="card">
+  {% if accounts %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>№</th><th>Клиент</th><th>Банк</th><th>Тип</th>
+            <th class="num">Баланс</th><th>Статус</th><th>Действие</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for account in accounts %}
+            <tr class="{% if account.is_closed %}row-closed{% endif %}">
+              <td data-label="№">{{ account.id }}</td>
+              <td data-label="Клиент">{{ account.owner.username if account.owner else '—' }}</td>
+              <td data-label="Банк" class="cell-text">{{ account.bank.name if account.bank else '—' }}</td>
+              <td data-label="Тип">{{ ACCOUNT_TYPE_TITLES.get(account.acc_type, account.acc_type) }}</td>
+              <td data-label="Баланс" class="num">{{ account.balance|money }}</td>
+              <td data-label="Статус">
+                {% if account.is_closed %}
+                  <span class="badge badge-muted">закрыт</span>
+                {% elif account.is_blocked %}
+                  <span class="badge badge-warning">заблокирован</span>
+                {% else %}
+                  <span class="badge badge-success">открыт</span>
+                {% endif %}
+              </td>
+              <td data-label="Действие">
+                {% if account.is_closed %}
+                  <span class="muted">—</span>
+                {% elif account.is_blocked %}
+                  <form method="post" action="{{ url_for('manager.unblock_account', account_id=account.id) }}"
+                        class="inline-form">
+                    <button type="submit" class="button button-small">Разблокировать</button>
+                  </form>
+                {% else %}
+                  <form method="post" action="{{ url_for('manager.block_account', account_id=account.id) }}"
+                        class="inline-form" data-confirm="Заблокировать счёт №{{ account.id }}?">
+                    <button type="submit" class="button button-small button-danger">Заблокировать</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">Счетов в системе нет.</p>
+  {% endif %}
+</section>
+{% endblock %}

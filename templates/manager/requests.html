@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Заявки — Финансовая система{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Заявки на зарплатный проект</h1>
+  <p class="muted">Подтверждение добавляет клиента в штат предприятия с указанным окладом.</p>
+</div>
+
+<section class="card">
+  {% if requests %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>№</th><th>Клиент</th><th>Предприятие</th><th>Подана</th>
+            <th>Статус</th><th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in requests %}
+            <tr>
+              <td data-label="№">{{ item.id }}</td>
+              <td data-label="Клиент">{{ item.user.username if item.user else '—' }}</td>
+              <td data-label="Предприятие" class="cell-text">{{ item.enterprise.name if item.enterprise else '—' }}</td>
+              <td data-label="Подана" class="nowrap">{{ item.created_at.strftime('%d.%m.%Y') }}</td>
+              <td data-label="Статус">
+                <span class="badge
+                  {% if item.status == 'approved' %}badge-success
+                  {% elif item.status == 'pending' %}badge-warning
+                  {% else %}badge-muted{% endif %}">
+                  {{ REQUEST_STATUS_TITLES.get(item.status, item.status) }}
+                </span>
+              </td>
+              <td data-label="Действия" class="actions">
+                {% if item.status == 'pending' %}
+                  <form method="post" action="{{ url_for('manager.approve_request', request_id=item.id) }}"
+                        class="inline-form">
+                    <label class="inline-field">
+                      <span class="visually-hidden">Оклад</span>
+                      <input type="text" name="salary_amount" value="1000.00" inputmode="decimal"
+                             class="input-small" aria-label="Оклад">
+                    </label>
+                    <button type="submit" class="button button-small button-primary">Подтвердить</button>
+                  </form>
+                  <form method="post" action="{{ url_for('manager.reject_request', request_id=item.id) }}"
+                        class="inline-form" data-confirm="Отклонить заявку №{{ item.id }}?">
+                    <button type="submit" class="button button-small button-danger">Отклонить</button>
+                  </form>
+                {% elif item.status == 'approved' %}
+                  <form method="post" action="{{ url_for('manager.revoke_request', request_id=item.id) }}"
+                        class="inline-form" data-confirm="Отозвать подтверждение заявки №{{ item.id }}?">
+                    <button type="submit" class="button button-small">Отозвать</button>
+                  </form>
+                {% else %}
+                  <span class="muted">решение принято</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">Заявок нет.</p>
+  {% endif %}
+</section>
+{% endblock %}
