@@ -211,7 +211,7 @@ def to_markdown(result: dict) -> str:
 
 
 def main() -> None:
-    db_path = ROOT / "docs" / "_compat.db"
+    db_path = ROOT / "docs" / "lab4" / "_compat.db"
     if db_path.exists():
         db_path.unlink()
 

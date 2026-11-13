@@ -32,7 +32,7 @@ finance_copy.db
 docs/lab3/_screenshots.db
 docs/lab4/_security.db
 docs/lab4/_security.log
-docs/lab5/_compat.db
+docs/lab4/_compat.db
 
 # отчёт прогона тестов — часть отчёта ЛР3, исключение из *.log
 !docs/lab3/test-run.log
