@@ -116,6 +116,7 @@ flask --app app run --debug     # http://127.0.0.1:5000
 | Те же тесты в другом браузере | `UI_BROWSER=firefox pytest -m ui`, `UI_BROWSER=webkit pytest -m ui` |
 | Нагрузка | `locust -f load/locustfile.py` |
 | Линтер | `ruff check .` |
+| CI (GitHub Actions) | `.github/workflows/ci.yml`: на push/PR — линтер, тесты с покрытием, браузерные тесты |
 | Матрица кроссбраузерности | `python tools/cross_browser_check.py` → `docs/lab4/COMPATIBILITY.md` |
 | Проверки безопасности | `python tools/security_check.py` → `docs/lab4/SECURITY.md` |
 | Скриншоты для отчёта | `python tools/capture_screenshots.py` |
